@@ -1,6 +1,4 @@
-
-
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 
 /**
@@ -279,17 +277,15 @@ contract ERC20 is IERC20 {
     /**
     * @dev Internal function that burns an amount of the token of a given
     * account, deducting from the sender's allowance for said account. Uses the
-    * internal _burn function.
-    * @param _account The account whose tokens will be burnt.
-    * @param _amount The amount that will be burnt.
+    * internal burn function.
+    * @param account The account whose tokens will be burnt.
+    * @param value The amount that will be burnt.
     */
-    function _burnFrom(address _account, uint256 _amount) internal {
-        require(_amount <= allowed_[_account][msg.sender],"Amount is more than alloved");
-
+    function _burnFrom(address _account, uint256 _value) internal {
         // Should https://github.com/OpenZeppelin/zeppelin-solidity/issues/707 be accepted,
         // this function needs to emit an event with the updated approval.
-        allowed_[_account][msg.sender] = allowed_[_account][msg.sender].sub(_amount);
-        _burn(_account, _amount);
+        allowed_[_account][msg.sender] = allowed_[_account][msg.sender].sub(_value);
+        _burn(_account, _value);
     }
 }
 
@@ -403,8 +399,13 @@ contract ATHLETICOToken is ERC20Pausable {
     address public CrowdsaleAddress;
     bool public ICOover;
 
-    mapping (address => bool) internal kyc;
+    mapping (address => bool) public kyc;
+    mapping (address => uint256) public sponsors;
 
+    event Sponsor(
+        address indexed from,
+        uint256 value
+    );
 
     constructor(address _CrowdsaleAddress) public {
     
@@ -448,17 +449,52 @@ contract ATHLETICOToken is ERC20Pausable {
     }
 
     
-/**
+  /**
    * @dev Function to mint tokens
    * can run only from crowdsale contract
    * @param to The address that will receive the minted tokens.
-   * @param value The amount of tokens to mint.
+   * @param _value The amount of tokens to mint.
    * @return A boolean that indicates if the operation was successful.
    */
-  function mint(address to, uint256 value) public onlyOwner {
-    _mint(to, value);
-  }
+    function mint(address to, uint256 _value) public onlyOwner {
+        _mint(to, _value);
+    }
 
+
+   /**
+    * @dev Function to burn tokens
+    * Anyone can burn their tokens and in this way help the project.
+    * Information about sponsors is public.
+    * On the project website you can get a sponsor certificate.
+    */
+    function burn(uint256 _value) public {
+        _burn(msg.sender, _value);
+        sponsors[msg.sender] = sponsors[msg.sender].add(_value);
+        emit Sponsor(msg.sender, _value);
+    }
+
+    /**
+    * @dev Burns a specific amount of tokens from the target address and decrements allowance
+    * @param from address The address which you want to send tokens from
+    * @param value uint256 The amount of token to be burned
+    */
+    function burnFrom(address _from, uint256 _value) public {
+        _burnFrom(_from, _value);
+    }
+
+    /**
+    * @dev function set kyc bool to true
+    * can run only from crowdsale contract
+    * @param _investor The investor who passed the procedure KYC
+    */
+    function kycPass(address _investor) public onlyOwner {
+        kyc[_investor] = true;
+    }
+
+  /**
+   * @dev function set ICOOver bool to true
+   * can run only from crowdsale contract
+   */
   function setICOover() public onlyOwner {
     ICOover = true;
   }
@@ -504,17 +540,17 @@ contract ATHLETICOToken is ERC20Pausable {
 
 /**
  * @title Ownable
- * @dev The Ownable contract has an owner and manager addresses, and provides basic authorization control
+ * @dev The Ownable contract has an owner and DAOContract addresses, and provides basic authorization control
  * functions, this simplifies the implementation of "user permissions".
  */
 contract Ownable {
     address public owner;
-    address public manager;
+    address public DAOContract;
     address candidate;
 
     constructor() public {
         owner = msg.sender;
-        manager = msg.sender;
+        DAOContract = msg.sender;
     }
 
     modifier onlyOwner() {
@@ -522,8 +558,8 @@ contract Ownable {
         _;
     }
 
-    modifier restricted() {
-        require(msg.sender == owner || msg.sender == manager,"Access denied");
+    modifier onlyDAO() {
+        require(msg.sender == DAOContract,"Access denied");
         _;
     }
 
@@ -532,9 +568,9 @@ contract Ownable {
         candidate = _newOwner;
     }
 
-    function setManager(address _newManager) public onlyOwner {
-        require(_newManager != address(0),"Invalid address");
-        manager = _newManager;
+    function setDAOContract(address _newDAOContract) public onlyOwner {
+        require(_newDAOContract != address(0),"Invalid address");
+        DAOContract = _newDAOContract;
     }
 
 
@@ -633,8 +669,10 @@ contract Crowdsale is Ownable {
         setState(State.CrowdSale);
     }
 
-
-    function finishCrowdSale() public onlyOwner onlyInState(State.CrowdSale) {
+    /**
+     * @dev public function finishing crowdsale if enddate is coming or softcap is passed
+     */
+    function finishCrowdSale() public onlyInState(State.CrowdSale) {
         require(now >= crowdSaleEndTime || myAddress.balance >= softCap, "Too early");
         if(myAddress.balance >= softCap) {
         setState(State.WorkTime);
@@ -653,7 +691,7 @@ contract Crowdsale is Ownable {
     }
 
     /**
-    * @dev low level token purchase ***DO NOT OVERRIDE***
+    * @dev token purchase
     * @param _beneficiary Address performing the token purchase
     */
     function buyTokens(address _beneficiary) public payable {
@@ -701,46 +739,55 @@ contract Crowdsale is Ownable {
     }
 
     /**
-     * @dev called by the owner to set new rate
+     * @dev called by the DAO to set new rate
      */
-    function setRate(uint256 _newRate) public onlyOwner {
+    function setRate(uint256 _newRate) public onlyDAO {
         rate = _newRate;
     }
 
+    /**
+     * @dev function set kyc bool to true
+     * @param _investor The investor who passed the procedure KYC
+     */
+    function setKYCpassed(address _investor) public onlyDAO returns(bool){
+        token.kycPass(_investor);
+        return true;
+    }
 
     /**
-     * @dev the function tranfer tokens from TeamAddress1 to investor
+     * @dev the function tranfer tokens from TeamAddress 
      */
-    function transferTokensFromTeamAddress(address _investor, uint256 _value) public restricted returns(bool){
+    function transferTokensFromTeamAddress(address _investor, uint256 _value) public onlyDAO returns(bool){
         token.transferTokensFromSpecialAddress(address(teamAddress), _investor, _value); 
         return true;
     } 
 
     
     /**
-     * @dev the function tranfer tokens from BountyAddress to investor
+     * @dev the function tranfer tokens from BountyAddress 
      */
-    function transferTokensFromBountyAddress(address _investor, uint256 _value) public restricted returns(bool){
+    function transferTokensFromBountyAddress(address _investor, uint256 _value) public onlyDAO returns(bool){
         token.transferTokensFromSpecialAddress(address(bountyAddress), _investor, _value); 
         return true;
     } 
     
     /**
-    * @dev Validation of an incoming purchase. 
-    * @param _beneficiary Address performing the token purchase
-    * @param _weiAmount Value in wei involved in the purchase
-    */
+     * @dev Validation of an incoming purchase. internal function.
+     * @param _beneficiary Address performing the token purchase
+     * @param _weiAmount Value in wei involved in the purchase
+     */
     function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal view{
+        require(now >= crowdSaleStartTime,"ICO has not started yet, wait until 01/12/2018");
         require(_beneficiary != address(0),"Invalid address");
         require(_weiAmount >= minValue,"Min amount is 0.005 ether");
         require(currentState != State.Refunding, "Only for CrowdSale and Work stage.");
     }
 
     /**
-    * @dev internal function
-    * @param _beneficiary Address performing the token purchase
-    * @param _tokenAmount Number of tokens to be emitted
-    */
+     * @dev internal function
+     * @param _beneficiary Address performing the token purchase
+     * @param _tokenAmount Number of tokens to be emitted
+     */
     function _deliverTokens(address _beneficiary, uint256 _tokenAmount) internal {
         token.safeTransfer(_beneficiary, _tokenAmount);
     }
@@ -748,17 +795,17 @@ contract Crowdsale is Ownable {
 
     /**
      * @dev Function transfer token to new investors
-     * Access restricted owner
+     * Access restricted DAO
      */ 
-    function transferTokens(address _newInvestor, uint256 _tokenAmount) public onlyOwner {
+    function transferTokens(address _newInvestor, uint256 _tokenAmount) public onlyDAO {
         _deliverTokens(_newInvestor, _tokenAmount);
     }
 
     /**
      * @dev Function mint tokens to winners or prize funds contracts
-     * Access restricted owner
+     * Access restricted DAO
      */ 
-    function mintTokensToWinners(address _address, uint256 _tokenAmount) public onlyOwner {
+    function mintTokensToWinners(address _address, uint256 _tokenAmount) public onlyDAO {
         require(currentState == State.WorkTime, "CrowdSale is not finished yet. Access denied.");
         token.mint(_address, _tokenAmount);
     }
@@ -807,6 +854,9 @@ contract Crowdsale is Ownable {
         return resultAmount.mul(rate);
     }
 
+    /**
+     * @dev function returns funds to investors in case of project failure.
+     */
     function refund() public payable{
         require(currentState == State.Refunding, "Only for Refunding stage.");
         // refund ether to investors
@@ -816,9 +866,10 @@ contract Crowdsale is Ownable {
         emit Refunding(msg.sender, value);
     }
 
-
-
-    function withdrawFunds (address _to, uint256 _value) public onlyOwner {
+    /**
+     * @dev function of withdrawal of funds for the development of the project if successful
+     */
+    function withdrawFunds (address _to, uint256 _value) public onlyDAO {
         require(currentState == State.WorkTime, "CrowdSale is not finished yet. Access denied.");
         require (myAddress.balance >= _value,"Value is more than balance");
         require(_to != address(0),"Invalid address");
