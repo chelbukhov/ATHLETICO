@@ -8,3 +8,13 @@
 8. Эфиры собранные на продаже монет идут на кошелёк компании. 
 9. 10% от миллиарда монет остаются команде проекта. Их можно будет использовать в своих целях.
 10. Остальные средства идут на развитие и доработку проекта.
+
+
+описание контракта
+https://docs.google.com/document/d/10nUXEGf9t_D_vKVUJ8u14ArjSQELB_MOtPhFJopREnc/edit#
+
+проведены проверки:
+Remix
+Truffle (ganache-cli)
+SmartCheck:	https://tool.smartdec.net/scan/08662919eb004be294346028428de204
+Securify: 	https://securify.chainsecurity.com/report/dc1b5893f8a0d8b8107457cdc2cb552bc9ce7fba4e23e8f3ed11a1a6a7b50385

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity 0.4.25;
 
 
 /**
@@ -274,19 +274,6 @@ contract ERC20 is IERC20 {
         emit Transfer(_account, address(0), _amount);
     }
 
-    /**
-    * @dev Internal function that burns an amount of the token of a given
-    * account, deducting from the sender's allowance for said account. Uses the
-    * internal burn function.
-    * @param account The account whose tokens will be burnt.
-    * @param value The amount that will be burnt.
-    */
-    function _burnFrom(address _account, uint256 _value) internal {
-        // Should https://github.com/OpenZeppelin/zeppelin-solidity/issues/707 be accepted,
-        // this function needs to emit an event with the updated approval.
-        allowed_[_account][msg.sender] = allowed_[_account][msg.sender].sub(_value);
-        _burn(_account, _value);
-    }
 }
 
 
@@ -402,7 +389,7 @@ contract ATHLETICOToken is ERC20Pausable {
     mapping (address => bool) public kyc;
     mapping (address => uint256) public sponsors;
 
-    event Sponsor(
+    event LogSponsor(
         address indexed from,
         uint256 value
     );
@@ -420,7 +407,7 @@ contract ATHLETICOToken is ERC20Pausable {
     }
     
     modifier validDestination( address to ) {
-        require(to != address(0x0),"Empty address");
+        require(to != address(0),"Empty address");
         require(to != address(this),"RESTO Token address");
         _;
     }
@@ -470,16 +457,7 @@ contract ATHLETICOToken is ERC20Pausable {
     function burn(uint256 _value) public {
         _burn(msg.sender, _value);
         sponsors[msg.sender] = sponsors[msg.sender].add(_value);
-        emit Sponsor(msg.sender, _value);
-    }
-
-    /**
-    * @dev Burns a specific amount of tokens from the target address and decrements allowance
-    * @param from address The address which you want to send tokens from
-    * @param value uint256 The amount of token to be burned
-    */
-    function burnFrom(address _from, uint256 _value) public {
-        _burnFrom(_from, _value);
+        emit LogSponsor(msg.sender, _value);
     }
 
     /**
@@ -491,13 +469,23 @@ contract ATHLETICOToken is ERC20Pausable {
         kyc[_investor] = true;
     }
 
-  /**
-   * @dev function set ICOOver bool to true
-   * can run only from crowdsale contract
-   */
-  function setICOover() public onlyOwner {
-    ICOover = true;
-  }
+    /**
+    * @dev function set kyc bool to false
+    * can run only from crowdsale contract
+    * @param _investor The investor who not passed the procedure KYC (change after passing kyc - something wrong)
+    */
+    function kycNotPass(address _investor) public onlyOwner {
+        kyc[_investor] = false;
+    }
+
+    /**
+    * @dev function set ICOOver bool to true
+    * can run only from crowdsale contract
+    */
+    function setICOover() public onlyOwner {
+        ICOover = true;
+    }
+
     /**
      * @dev function transfer tokens from special address to users
      * can run only from crowdsale contract
@@ -530,10 +518,7 @@ contract ATHLETICOToken is ERC20Pausable {
         paused = false;
         emit Unpaused();
     }
-
-    function() external payable {
-        revert("The token contract don`t receive ether");
-    }  
+ 
 }
 
 
@@ -546,7 +531,7 @@ contract ATHLETICOToken is ERC20Pausable {
 contract Ownable {
     address public owner;
     address public DAOContract;
-    address candidate;
+    address private candidate;
 
     constructor() public {
         owner = msg.sender;
@@ -584,16 +569,12 @@ contract Ownable {
 
 
 contract TeamAddress {
-    function() external payable {
-        revert("The contract don`t receive ether");
-    } 
+
 }
 
 
 contract BountyAddress {
-    function() external payable {
-        revert("The contract don`t receive ether");
-    } 
+
 }
 
 
@@ -606,15 +587,15 @@ contract Crowdsale is Ownable {
     using SafeERC20 for ATHLETICOToken;
 
     event LogStateSwitch(State newState);
-    event Refunding(address indexed to, uint256 amount);
+    event LogRefunding(address indexed to, uint256 amount);
     mapping(address => uint) public crowdsaleBalances;
 
-    uint256 softCap = 250 * 1 ether;
-    address myAddress = this;
+    uint256 public softCap = 250 * 1 ether;
+    address internal myAddress = this;
     ATHLETICOToken public token = new ATHLETICOToken(myAddress);
-    uint64 crowdSaleStartTime = 1543622400;       // 01.12.2018 0:00:00
-    uint64 crowdSaleEndTime = 1559347200;       // 01.06.2019 0:00:00
-    uint256 minValue = 0.005 ether;
+    uint64 public crowdSaleStartTime = 1543622400;       // 01.12.2018 0:00:00
+    uint64 public crowdSaleEndTime = 1559347200;       // 01.06.2019 0:00:00
+    uint256 internal minValue = 0.005 ether;
 
     //Addresses for store tokens
     TeamAddress public teamAddress = new TeamAddress();
@@ -626,13 +607,13 @@ contract Crowdsale is Ownable {
     // Amount of wei raised
     uint256 public weiRaised;
 
-    event Withdraw(
+    event LogWithdraw(
         address indexed from, 
         address indexed to, 
         uint256 amount
     );
 
-    event TokensPurchased(
+    event LogTokensPurchased(
         address indexed purchaser,
         address indexed beneficiary,
         uint256 value,
@@ -708,7 +689,7 @@ contract Crowdsale is Ownable {
 
         crowdsaleBalances[_beneficiary] = crowdsaleBalances[_beneficiary].add(weiAmount);
         
-        emit TokensPurchased(
+        emit LogTokensPurchased(
             msg.sender,
             _beneficiary,
             weiAmount,
@@ -751,6 +732,15 @@ contract Crowdsale is Ownable {
      */
     function setKYCpassed(address _investor) public onlyDAO returns(bool){
         token.kycPass(_investor);
+        return true;
+    }
+
+    /**
+     * @dev function set kyc bool to false
+     * @param _investor The investor who not passed the procedure KYC after passing
+     */
+    function setKYCNotPassed(address _investor) public onlyDAO returns(bool){
+        token.kycNotPass(_investor);
         return true;
     }
 
@@ -863,7 +853,7 @@ contract Crowdsale is Ownable {
         uint value = crowdsaleBalances[msg.sender]; 
         crowdsaleBalances[msg.sender] = 0; 
         msg.sender.transfer(value);
-        emit Refunding(msg.sender, value);
+        emit LogRefunding(msg.sender, value);
     }
 
     /**
@@ -874,7 +864,7 @@ contract Crowdsale is Ownable {
         require (myAddress.balance >= _value,"Value is more than balance");
         require(_to != address(0),"Invalid address");
         _to.transfer(_value);
-        emit Withdraw(msg.sender, _to, _value);
+        emit LogWithdraw(msg.sender, _to, _value);
     }
 
 }
