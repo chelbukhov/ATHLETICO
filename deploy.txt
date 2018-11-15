@@ -1,9 +1,9 @@
 
 
-описание контракта
+РѕРїРёСЃР°РЅРёРµ РєРѕРЅС‚СЂР°РєС‚Р°
 https://docs.google.com/document/d/10nUXEGf9t_D_vKVUJ8u14ArjSQELB_MOtPhFJopREnc/edit#
 
-проведены проверки:
+РїСЂРѕРІРµРґРµРЅС‹ РїСЂРѕРІРµСЂРєРё:
 Remix
 Truffle (ganache-cli)
 SmartCheck:	https://tool.smartdec.net/scan/08662919eb004be294346028428de204
