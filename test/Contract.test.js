@@ -9,7 +9,7 @@ const compiledContract = require('../build/Crowdsale.json');
 const compiledToken = require('../build/ATHLETICOToken.json');
 
 // старт тестов 01.12.2018
-const addTimeToStart = 23; // время в днях до Start Crowdsale 01/12/2018
+const addTimeToStart = 16; // время в днях до Start Crowdsale 01/12/2018
 
 let accounts;
 let contractAddress;
@@ -60,7 +60,7 @@ describe('Серия тестов для проверки функций рас�
         assert(myBalance == 50000000);
         //console.log("bountyAddress: ", myBalance);
     });
-
+/*
     // пополнение средств до начала краудсейла
     it('Переводим от account[2] 5 эфиров, должен отбить...', async () => {
         try {
@@ -75,7 +75,7 @@ describe('Серия тестов для проверки функций рас�
             //console.log(error);
         }
     });
-
+*/
     // установка начала ICO
     it('Увеличиваем время в ganache-cli на addTimeToStart дней - до 01 декабря', async () => {
         const myVal = await new Promise((resolve, reject) =>
@@ -392,6 +392,35 @@ it('Увеличиваем время в ganache-cli на addTimeToStart дне�
         //console.log(myBalance);
     });
 
+
+    it('Проверка баланса на account[9] - ...', async () => {
+        accBalance = await web3.eth.getBalance(accounts[9]);
+        accBalance = web3.utils.fromWei(accBalance, 'ether');
+        assert(accBalance < 100);
+        //console.log("Balance of account[9] before withdraw: ", accBalance);
+    });
+
+
+
+    it('Проверка вывода профита withdrawFunds... ', async () => {
+        try {
+            await contract.methods.withdrawFunds(accounts[9], "100000000000000000000").send({ //100 ether
+                from: accounts[0],
+                gas: "1000000",
+            });
+            assert(true);    
+        } catch (error) {
+            assert(false);
+            //console.log(error);
+        }
+    });
+
+    it('Проверка баланса на account[9] - ...', async () => {
+        accBalance = await web3.eth.getBalance(accounts[9]);
+        accBalance = web3.utils.fromWei(accBalance, 'ether');
+        assert(accBalance > 190);
+        //console.log("Balance of account[9] after withdraw: ", accBalance);
+    });
 });
 
 

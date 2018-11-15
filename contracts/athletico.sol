@@ -593,7 +593,7 @@ contract Crowdsale is Ownable {
     uint256 public softCap = 250 * 1 ether;
     address internal myAddress = this;
     ATHLETICOToken public token = new ATHLETICOToken(myAddress);
-    uint64 public crowdSaleStartTime = 1543622400;       // 01.12.2018 0:00:00
+    uint64 public crowdSaleStartTime;       
     uint64 public crowdSaleEndTime = 1559347200;       // 01.06.2019 0:00:00
     uint256 internal minValue = 0.005 ether;
 
@@ -648,6 +648,7 @@ contract Crowdsale is Ownable {
 
         rate = 20000;
         setState(State.CrowdSale);
+        crowdSaleStartTime = uint64(now);
     }
 
     /**
@@ -767,7 +768,6 @@ contract Crowdsale is Ownable {
      * @param _weiAmount Value in wei involved in the purchase
      */
     function _preValidatePurchase(address _beneficiary, uint256 _weiAmount) internal view{
-        require(now >= crowdSaleStartTime,"ICO has not started yet, wait until 01/12/2018");
         require(_beneficiary != address(0),"Invalid address");
         require(_weiAmount >= minValue,"Min amount is 0.005 ether");
         require(currentState != State.Refunding, "Only for CrowdSale and Work stage.");
@@ -824,11 +824,11 @@ contract Crowdsale is Ownable {
         /**
         * ICO bonus                        UnisTimeStamp 
         *                                  Start date       End date
-        * 01.12.2018-01.01.2019 - 100%     1543622400       1546300800
+        * StartTime -01.01.2019 - 100%     1543622400       1546300800
         * 01.01.2019-01.02.2019 - 50%      1546300800       1548979200
         * 01.02.2019-01.03.2019 - 25%      1548979200       1551398400
         */
-        if (now >= 1543622400 && now < 1546300800) {
+        if (now >= crowdSaleStartTime && now < 1546300800) {
             bonus = 100;
         }
         if (now >= 1546300800 && now < 1548979200) {

@@ -1,0 +1,28 @@
+
+
+описание контракта
+https://docs.google.com/document/d/10nUXEGf9t_D_vKVUJ8u14ArjSQELB_MOtPhFJopREnc/edit#
+
+проведены проверки:
+Remix
+Truffle (ganache-cli)
+SmartCheck:	https://tool.smartdec.net/scan/08662919eb004be294346028428de204
+Securify: 	https://securify.chainsecurity.com/report/dc1b5893f8a0d8b8107457cdc2cb552bc9ce7fba4e23e8f3ed11a1a6a7b50385
+
+
+Rinkeby
+Crowdsale
+https://rinkeby.etherscan.io/address/0x3d4d78223f70ee4593f1f40dd68c6d08ecbe401d
+
+Token
+https://rinkeby.etherscan.io/token/0x5b8dd11ecca11c0351379ee801ee13d5f0225ecd
+
+MainNet
+Crowdsale
+https://etherscan.io/address/0x991f09f2e5dd6d1f3ff7f72d0dcab964d4c8cbbf
+
+Token
+https://etherscan.io/token/0x121a0b9211529a8e332e6deca169a18b0ddd0ea2
+
+ABI
+000000000000000000000000991f09f2e5dd6d1f3ff7f72d0dcab964d4c8cbbf
